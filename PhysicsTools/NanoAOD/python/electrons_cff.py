@@ -97,11 +97,18 @@ bitmapVIDForEleSum16.WorkingPoints = cms.vstring(
 )
 _bitmapVIDForEleSum16_docstring = _get_bitmapVIDForEle_docstring(electron_id_modules_WorkingPoints_nanoAOD.modules,bitmapVIDForEleSum16.WorkingPoints)
 
+bitmapVIDForEleHEEP = bitmapVIDForEle.clone()
+bitmapVIDForEleHEEP.WorkingPoints = cms.vstring(
+        "egmGsfElectronIDs:heepElectronID-HEEPV70"
+)
+_bitmapVIDForEleHEEP_docstring = _get_bitmapVIDForEle_docstring(electron_id_modules_WorkingPoints_nanoAOD.modules,bitmapVIDForEleHEEP.WorkingPoints)
+
 
 for modifier in run2_miniAOD_80XLegacy, run2_nanoAOD_92X:
     modifier.toModify(bitmapVIDForEle, src = "slimmedElectronsUpdated")
     modifier.toModify(bitmapVIDForEleSpring15, src = "slimmedElectronsUpdated")
     modifier.toModify(bitmapVIDForEleSum16, src = "slimmedElectronsUpdated")
+    modifier.toModify(bitmapVIDForEleHEEP, src = "slimmedElectronsUpdated")
 
 isoForEle = cms.EDProducer("EleIsoValueMapProducer",
     src = cms.InputTag("slimmedElectrons"),
@@ -254,6 +261,7 @@ for modifier in run2_miniAOD_80XLegacy, run2_nanoAOD_94X2016:
     modifier.toModify(slimmedElectronsWithUserData.userInts,
                       VIDNestedWPBitmapSpring15 = cms.InputTag("bitmapVIDForEleSpring15"),
                       VIDNestedWPBitmapSum16 = cms.InputTag("bitmapVIDForEleSum16"),
+                      VIDNestedWPBitmapHEEP = cms.InputTag("bitmapVIDForEleHEEP"),
                       )
 
 finalElectrons = cms.EDFilter("PATElectronRefSelector",
@@ -349,6 +357,13 @@ electronTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         convVeto = Var("passConversionVeto()",bool,doc="pass conversion veto"),
         lostHits = Var("gsfTrack.hitPattern.numberOfLostHits('MISSING_INNER_HITS')","uint8",doc="number of missing inner hits"),
         isPFcand = Var("pfCandidateRef().isNonnull()",bool,doc="electron is PF candidate"),
+        trkPx = Var("gsfTrack().px()",float,doc="GSF track Px",precision=8),
+        trkPy = Var("gsfTrack().py()",float,doc="GSF track Py",precision=8),
+        trkPz = Var("gsfTrack().pz()",float,doc="GSF track Pz",precision=8),
+        scEta = Var("superCluster().eta()",float,doc="supercluster eta",precision=8),
+        scPhi = Var("superCluster().phi()",float,doc="supercluster phi",precision=8),
+        scEnergy = Var("superCluster().energy()",float,doc="supercluster energy",precision=8),
+        caloEnergy = Var("caloEnergy()",float,doc="calorimeter energy",precision=8),
     ),
     externalVariables = cms.PSet(
         mvaTTH = ExtVar(cms.InputTag("electronMVATTH"),float, doc="TTH MVA lepton ID score",precision=14),
@@ -397,6 +412,7 @@ run2_nanoAOD_94X2016.toModify(electronTable.variables,
     mvaFall17V1noIso_WPL = Var("electronID('mvaEleID-Fall17-noIso-V1-wpLoose')",bool,doc="MVA Fall17 V1 noIso ID loose WP"),
     vidNestedWPBitmapSpring15 = Var("userInt('VIDNestedWPBitmapSpring15')",int,doc=_bitmapVIDForEleSpring15_docstring),
     vidNestedWPBitmapSum16 = Var("userInt('VIDNestedWPBitmapSum16')",int,doc=_bitmapVIDForEleSum16_docstring),
+    vidNestedWPBitmapHEEP = Var("userInt('VIDNestedWPBitmapHEEP')",int,doc=_bitmapVIDForEleHEEP_docstring),
 )
 run2_miniAOD_80XLegacy.toModify(electronTable.variables,
     jetRelIso = Var("(1./userFloat('ptRatio'))-1.",float,doc="Relative isolation in matched jet (1/ptRatio-1, 0 if no matched jet (2016 definition))",precision=8),
@@ -411,6 +427,7 @@ run2_miniAOD_80XLegacy.toModify(electronTable.variables,
 
     vidNestedWPBitmapSpring15 = Var("userInt('VIDNestedWPBitmapSpring15')",int,doc=_bitmapVIDForEleSpring15_docstring),
     vidNestedWPBitmapSum16 = Var("userInt('VIDNestedWPBitmapSum16')",int,doc=_bitmapVIDForEleSum16_docstring),
+    vidNestedWPBitmapHEEP = Var("userInt('VIDNestedWPBitmapHEEP')",int,doc=_bitmapVIDForEleHEEP_docstring),
 
 )
 
@@ -443,7 +460,7 @@ _withUpdate_sequence = cms.Sequence(slimmedElectronsUpdated + electronSequence.c
 run2_nanoAOD_92X.toReplaceWith(electronSequence, _withUpdate_sequence)
 
 _withUpdateAnd80XLegacyScale_sequence = _withUpdate_sequence.copy()
-_withUpdateAnd80XLegacyScale_sequence.replace(slimmedElectronsWithUserData, calibratedPatElectrons80XLegacy + bitmapVIDForEleSpring15 +bitmapVIDForEleSum16 + slimmedElectronsWithUserData)
+_withUpdateAnd80XLegacyScale_sequence.replace(slimmedElectronsWithUserData, calibratedPatElectrons80XLegacy + bitmapVIDForEleSpring15 +bitmapVIDForEleSum16 + bitmapVIDForEleHEEP + slimmedElectronsWithUserData)
 run2_miniAOD_80XLegacy.toReplaceWith(electronSequence, _withUpdateAnd80XLegacyScale_sequence)
 
 _with94XScale_sequence = electronSequence.copy()
@@ -451,7 +468,10 @@ _with94XScale_sequence.replace(slimmedElectronsWithUserData, calibratedPatElectr
 run2_nanoAOD_94XMiniAODv1.toReplaceWith(electronSequence, _with94XScale_sequence)
 run2_nanoAOD_94XMiniAODv2.toReplaceWith(electronSequence, _with94XScale_sequence)
 
-_with_bitmapVIDForEleSpring15AndSum16_sequence = electronSequence.copy()
-_with_bitmapVIDForEleSpring15AndSum16_sequence.replace(slimmedElectronsWithUserData, bitmapVIDForEleSpring15 + bitmapVIDForEleSum16 + slimmedElectronsWithUserData)
-run2_nanoAOD_94X2016.toReplaceWith(electronSequence, _with_bitmapVIDForEleSpring15AndSum16_sequence)
+#_with_bitmapVIDForEleSpring15AndSum16_sequence = electronSequence.copy()
+#_with_bitmapVIDForEleSpring15AndSum16_sequence.replace(slimmedElectronsWithUserData, bitmapVIDForEleSpring15 + bitmapVIDForEleSum16 + slimmedElectronsWithUserData)
+#run2_nanoAOD_94X2016.toReplaceWith(electronSequence, _with_bitmapVIDForEleSpring15AndSum16_sequence)
 
+_with_bitmapVIDForEleSpring15AndSum16AndHEEP_sequence = electronSequence.copy()
+_with_bitmapVIDForEleSpring15AndSum16AndHEEP_sequence.replace(slimmedElectronsWithUserData, bitmapVIDForEleSpring15 + bitmapVIDForEleSum16 + bitmapVIDForEleHEEP + slimmedElectronsWithUserData)
+run2_nanoAOD_94X2016.toReplaceWith(electronSequence, _with_bitmapVIDForEleSpring15AndSum16AndHEEP_sequence)

@@ -3,6 +3,7 @@
 import sys
 import argparse
 import subprocess
+import shlex
 
 # setup cmsDriver era commands
 eraCommands = dict()
@@ -19,9 +20,12 @@ eraCommands[2018]['data']=eraCommands[2018]['mc']
 
 # common data/MC cmsDriver parts
 commonPart = dict()
-commonPart['data']="""cmsDriver.py lqCustomNano_data_{0} -s NANO --data --eventcontent NANOAOD --datatier NANOAOD """
-commonPart['mc']="""cmsDriver.py lqCustomNano_mc_{0} -s NANO --mc --eventcontent NANOAODSIM --datatier NANOAODSIM """
-commonPartBoth="""  --conditions {1} -n 100 --no_exec --customise_commands="process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))" """
+prefix="""cmsDriver.py lqCustomNano_{0}_{1} -s NANO"""
+commonPart['data']=prefix
+commonPart['mc']=prefix
+commonPart['data']+=""" --data --eventcontent NANOAOD --datatier NANOAOD """
+commonPart['mc']+=""" --mc --eventcontent NANOAODSIM --datatier NANOAODSIM """
+commonPartBoth=""" --conditions {2} -n 100 --no_exec --customise_commands="process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))" """
 commonPart['data']+=commonPartBoth
 commonPart['mc']+=commonPartBoth
 
@@ -47,9 +51,10 @@ category = args.datatype
 
 
 if year in cmsDriverCommands.keys() and category in cmsDriverCommands[year].keys():
-    command = cmsDriverCommands[year][category].format(year,globalTag)
+    command = cmsDriverCommands[year][category].format(category,year,globalTag)
+    splitCommand = shlex.split(command)
     print 'run for {0} {1}'.format(year,category),':',command
-    subprocess.check_call(command.split())
+    subprocess.check_call(splitCommand)
 else:
     print 'could not find cmsDriver command for {0} {1}'.format(year,category)+'; Quitting.'
     exit(-1)

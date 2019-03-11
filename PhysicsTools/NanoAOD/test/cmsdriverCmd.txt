@@ -1,4 +1,0 @@
-# MC
-#cmsDriver.py test_mc_94Xv2 -s NANO --mc --eventcontent NANOAODSIM --datatier NANOAODSIM --conditions 94X_mcRun2_asymptotic_v3 -n 100 --era Run2_2016,run2_miniAOD_80XLegacy --no_exec --customise_commands="process.add_(cms.Service('InitRootHandlers', EnableIMT = cms.untracked.bool(False)))"
-# data
-#cmsDriver.py test_data_94X -s NANO --data --eventcontent NANOAOD --datatier NANOAOD --conditions 94X_dataRun2_v10 -n 100 --era Run2_2016,run2_nanoAOD_94X2016 --no_exec --customise_commands="process.add_(cms.Service('InitRootHandlers', EnableIMT = cms.untracked.bool(False)))"

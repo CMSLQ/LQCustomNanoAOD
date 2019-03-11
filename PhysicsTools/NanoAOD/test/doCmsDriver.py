@@ -4,18 +4,33 @@ import sys
 import argparse
 import subprocess
 
+# setup cmsDriver era commands
+eraCommands = dict()
+for year in [2016,2017,2018]:
+    eraCommands[year] = dict()
+# see https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookNanoAOD#Running_on_various_datasets_from
+# don't put spaces in arguments or the 'split' later will fail
+eraCommands[2016]['mc']  =""" --era Run2_2016,run2_miniAOD_80XLegacy """ # RunIISummer16MiniAODv2 MC
+eraCommands[2016]['data']=""" --era Run2_2016,run2_nanoAOD_94X2016 """   # 94X data (17Jul2018) [and RunIISummer16MiniAODv3 MC]
+eraCommands[2017]['mc']  =""" --era Run2_2017,run2_nanoAOD_94XMiniAODv2 """ # for 2017 94X MiniAODv2 samples (including 31Mar2018 data)
+eraCommands[2017]['data']=eraCommands[2017]['mc']
+eraCommands[2018]['mc']  =""" --era Run2_2018,run2_nanoAOD_102Xv1 """ # for all 2018 10XY samples
+eraCommands[2018]['data']=eraCommands[2018]['mc']
+
+# common data/MC cmsDriver parts
+commonPart = dict()
+commonPart['data']="""cmsDriver.py lqCustomNano_data_{0} -s NANO --data --eventcontent NANOAOD --datatier NANOAOD """
+commonPart['mc']="""cmsDriver.py lqCustomNano_mc_{0} -s NANO --mc --eventcontent NANOAODSIM --datatier NANOAODSIM """
+commonPartBoth="""  --conditions {1} -n 100 --no_exec --customise_commands="process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))" """
+commonPart['data']+=commonPartBoth
+commonPart['mc']+=commonPartBoth
+
 cmsDriverCommands = dict()
 for year in [2016,2017,2018]:
     cmsDriverCommands[year] = dict()
+    for category in ['mc','data']:
+        cmsDriverCommands[year][category]=commonPart[category]+eraCommands[year][category]
 
-# example: https://cms-pdmv.cern.ch/mcm/public/restapi/requests/get_setup/EXO-RunIISummer16NanoAODv4-00034
-# don't put spaces in arguments or the 'split' later will fail
-cmsDriverCommands[2016]['mc']="""
-cmsDriver.py lqCustomNano_mc_102Xv2 -s NANO --mc --eventcontent NANOAODSIM --datatier NANOAODSIM --conditions {0} -n 100 --era Run2_2016,run2_miniAOD_80XLegacy --no_exec --customise_commands="process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))"
-"""
-cmsDriverCommands[2016]['data']="""
-cmsDriver.py lqCustomNano_data_102X -s NANO --data --eventcontent NANOAOD --datatier NANOAOD --conditions {0} -n 100 --era Run2_2016,run2_nanoAOD_94X2016 --no_exec --customise_commands="process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))"
-"""
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--datatype", help="MC or data", required=True,choices=['mc','data'])
@@ -32,7 +47,7 @@ category = args.datatype
 
 
 if year in cmsDriverCommands.keys() and category in cmsDriverCommands[year].keys():
-    command = cmsDriverCommands[year][category].format(globalTag)
+    command = cmsDriverCommands[year][category].format(year,globalTag)
     print 'run for {0} {1}'.format(year,category),':',command
     subprocess.check_call(command.split())
 else:

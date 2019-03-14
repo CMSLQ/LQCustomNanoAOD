@@ -20,7 +20,7 @@ eraCommands[2018]['data']=eraCommands[2018]['mc']
 
 # common data/MC cmsDriver parts
 commonPart = dict()
-prefix="""cmsDriver.py lqCustomNano_{0}_{1} -s NANO"""
+prefix="""cmsDriver.py lqCustomNano_{0}_{1}_{2} -s NANO"""
 commonPart['data']=prefix
 commonPart['mc']=prefix
 commonPart['data']+=""" --data --eventcontent NANOAOD --datatier NANOAOD """
